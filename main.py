@@ -1,7 +1,5 @@
 #!/usr/bin/env python
-# example base.py
 import pygtk
-#pygtk.require('2.0')
 import gtk, gobject
 import os
 import MySQLdb
@@ -168,9 +166,6 @@ class MainMobvices:
 			self.v.fork_command()
 			self.hboxrow2.pack_start(self.v,True, True, 2)
 			length = len(command)
-			#A length is not required but is the easiest mechanism.
-			#Otherwise the command must be null terminated.
-			#Feed the command to the terminal.		
 			self.v.show()
 			self.v.feed_child(command,length)
 			has_vte = True
@@ -197,7 +192,7 @@ class MainMobvices:
 		
 		
 		self.window = gtk.Window(gtk.WINDOW_TOPLEVEL)
-		self.window.set_title("mobvices")
+		self.window.set_title("devices ITv0.1")
 		self.window.connect("delete_event", self.delete_event)
 		self.window.set_default_size(1200, 600)
 		self.window.set_border_width(10)  
@@ -241,6 +236,7 @@ class MainMobvices:
 		
 		#SHOW
 		self.window.show_all()
+		
 		#DEFAULT OPTIONS
 		has_vte = False
 
@@ -248,6 +244,7 @@ class MainMobvices:
 		gtk.main()
 
 print __name__
+
 if __name__ == "__main__":
 	base = MainMobvices()
 	base.main()
