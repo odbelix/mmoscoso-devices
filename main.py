@@ -1,4 +1,9 @@
 #!/usr/bin/env python
+# Manuel Moscoso Dominguez
+# Devices - Application for IT device  management. This application store the information
+# Version 0.1
+# 30-12-2013
+# Chile, Talca.
 import pygtk
 import gtk, gobject
 import os
