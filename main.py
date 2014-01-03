@@ -1,17 +1,15 @@
 #!/usr/bin/env python
 # Manuel Moscoso Dominguez
-# Devices - Application for IT device  management. This application store the information
+#Application for IT device  management. This application store the information
+#of IT devices in a mysql database with the goal to create a easy way to remote access
 # Version 0.1
 # 30-12-2013
 # Chile, Talca.
-import pygtk
-import gtk, gobject
-import os
-import MySQLdb
-import ConfigParser
-
+from src.DeviceManager import DeviceManager
+from src.TreeOfDevice import TreeOfDevice
+from src.DBManager import DBManager
 try:
-  import gtk
+  import gtk, gobject, pygtk
 except:
   print >> sys.stderr, "You need to install the python gtk bindings"
   sys.exit(1)
@@ -25,60 +23,6 @@ except:
   error.run()
   sys.exit (1) 
 
-
-class TreeOfDevice:
-	list_devices = []
-	def set_list_devices(self,results):
-		global list_devices
-		list_devices = results
-	def create_list(self):
-		global list_devices
-		
-		treeview = gtk.TreeView()
-		# create the TreeViewColumns to display the data
-		treeview.columns = [None]*9
-		treeview.columns[0] = gtk.TreeViewColumn('Tipo')
-		treeview.columns[1] = gtk.TreeViewColumn('Nombre')
-		treeview.columns[2] = gtk.TreeViewColumn('Direccion IP')
-		treeview.columns[3] = gtk.TreeViewColumn('Usuario')
-		treeview.columns[4] = gtk.TreeViewColumn('Password')
-		treeview.columns[5] = gtk.TreeViewColumn('Enable')
-		treeview.columns[6] = gtk.TreeViewColumn('Metodo Ingreso')
-		treeview.columns[7] = gtk.TreeViewColumn('S/N')
-		treeview.columns[8] = gtk.TreeViewColumn('Modelo')
-		
-		treeview.columns[0].set_max_width(40)
-		treeview.columns[1].set_max_width(250)
-		treeview.columns[2].set_max_width(250)
-		treeview.columns[3].set_max_width(250)
-		treeview.columns[4].set_max_width(250)
-		treeview.columns[5].set_max_width(250)
-		treeview.columns[6].set_max_width(250)
-		treeview.columns[7].set_max_width(250)
-		treeview.columns[8].set_max_width(250)
-		
-        
-		liststore = gtk.ListStore(str, str, str, str, str, str, str, str, str)
-		modelfilter = liststore.filter_new()
-		
-		for line in list_devices:
-			liststore.append([line[0], line[1],line[2],line[3],line[4],line[5],line[6],line[7],line[8]])
-		        
-		treeview.set_model(modelfilter)
-		
-		# add columns to treeview
-		for n in range(9):
-			treeview.append_column(treeview.columns[n])
-			treeview.columns[n].cell = gtk.CellRendererText()
-			treeview.columns[n].pack_start(treeview.columns[n].cell,
-                                                True)
-			treeview.columns[n].set_attributes(
-				treeview.columns[n].cell, text=n)
-
-        # make treeview searchable
-		treeview.set_search_column(5)
-               
-		return treeview
                 
 class MainMobvices:
 	# Global Variables
@@ -86,7 +30,7 @@ class MainMobvices:
 	list_type_devices = ['SW','RSW','AP','GW','ALL']
 	databasefile = 'database.ini'
 	database = {}
-	
+
 	
 	#Get database information from file
 	def getDataBaseInfo(self):
@@ -120,14 +64,41 @@ class MainMobvices:
 		except MySQLdb.Error, e:
 			print "An error has been passed. %s" %e
 			return False
+	
+	def createDevice(self,widget, data=None):
+		device = DeviceManager()
+		
 	       
+	def hello(self,widget, data=None):
+		print " -> %s" % str(widget)
+		
+	def searchByName(self,widget, data=None):
+		print "Searching by name (%s)... " % self.entry_search.get_text()
+		self.tree_device.set_search_entry(self.entry_search)
+		self.tree_device.expand_all()
+		childrens = self.tree.get_ListDevice()
+		lists =  self.tree.get_ListSearch()
+		lists.clear()
+		print "> %s" % str(childrens)
+		for child in childrens:
+			if self.entry_search.get_text().lower() in child[1].lower():
+				print "%s - %s" %(self.entry_search.get_text(),child[1])
+				lists.append([child[0], child[1],child[2],child[3],child[4],child[5],child[6],child[7],child[8]])
+		
+		self.tree.set_List(lists,2)
+		
+				
 			
 	def delete_event(self, widget, event, data=None):
 		gtk.main_quit()
 		return False
+		
+		
 	def destroy(self, widget, data=None):
 		print "destroy signal occurred"		
 		gtk.main_quit()
+		
+		
 	def CloseVTEandRemove(self,widget, data=None):
 		print "Close vte"
 		global has_vte
@@ -204,8 +175,12 @@ class MainMobvices:
 		
 		#TreeofDevice
 		self.tree = TreeOfDevice()
+		
+		#Class DBManager
 		query = "SELECT type,name,ip,username,pass,enable,input,system_sn,model FROM device"
-		results = self.selectValues(query)
+		db = DBManager()
+		results = db.selectValues(query)
+		
 		self.tree.set_list_devices(results)
 		self.tree_device = self.tree.create_list()
 		#self.tree_device.connect('cursor-changed', self.getSelectedDevice)
@@ -218,6 +193,30 @@ class MainMobvices:
 		button_refresh = gtk.Button("Refrescar Lista")
 		button_refresh.connect_object("clicked", self.RefreshListDevices,self.window)
 		
+		#Buttos for CRUD device
+		self.entry_search = gtk.Entry(100)
+		
+		
+		button_search = gtk.Button("Buscar")
+		button_add = gtk.Button("Agregar")
+		button_delete = gtk.Button("Eliminar")
+		button_update = gtk.Button("Actualizar")
+		button_search.connect_object("clicked", self.searchByName,self.window)
+		button_add.connect_object("clicked", self.createDevice,self.window)
+		button_delete.connect_object("clicked", self.hello,self.window)
+		button_update.connect_object("clicked", self.hello,self.window)
+		
+		
+		self.hbutton_box = gtk.HButtonBox()
+		self.hbutton_box.set_layout(gtk.BUTTONBOX_END)
+		#self.hbutton_box.add(entry_search)
+		#self.hbutton_box.add(button_search)
+		self.hbutton_box.add(button_add)
+		self.hbutton_box.add(button_delete)
+		self.hbutton_box.add(button_update)
+		#End Buttons for CRUD device
+		
+		
 		#VBOX AND HBOX
 		self.vboxmain = gtk.VBox(False, 0)
 		self.hboxrow1 = gtk.HBox(False,0)
@@ -229,13 +228,17 @@ class MainMobvices:
 		self.scrolledwindow.add(self.tree_device)
 		
 		
-		self.vboxtreeandbuttons.pack_start(self.scrolledwindow)	
+		self.vboxtreeandbuttons.pack_start(self.scrolledwindow)
+		self.vboxtreeandbuttons.pack_start(self.hbutton_box,False)
+		
 		self.vboxmain.pack_start(self.hboxrow1,False,False,2)
 		self.vboxmain.pack_start(self.hboxrow2,True,True,2)
 		
 		self.window.add(self.vboxmain)
 		self.hboxrow1.pack_start(button,False, False, 2)
 		self.hboxrow1.pack_start(button_connect,False, False, 2)
+		self.hboxrow1.pack_start(self.entry_search,False, False, 2)
+		self.hboxrow1.pack_start(button_search,False, False, 2)
 		self.hboxrow2.pack_start(self.vboxtreeandbuttons,True,True,2)
 	
 		
